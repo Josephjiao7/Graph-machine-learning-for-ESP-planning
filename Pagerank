@@ -1,0 +1,48 @@
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import ndlib.models.ModelConfig as mc
+import ndly.models.epidemics as ep
+# %matplotlib inline
+
+def draw(G, pos, measures, measure_name):
+    plt.figure(figsize=(20, 20))
+    nodes = nx.draw_networkx_nodes(G, pos, node_size=250, cmap=plt.cm.plasma,
+                                   node_color=list(measures.values()), nodelist=measures.keys())
+
+    nodes.set_norm(mcolors.SymLogNorm(linthresh=0.01, linscale=1, base=10))
+    edges = nx.draw_networkx_edges(G, pos)
+    labels = nx.draw_networkx_labels(G, pos, font_size=8, font_color='white')
+
+    # Add a legend
+    plt.colorbar(nodes, label=measurename, shrink=0.8)
+
+    plt.title(measure_name, fontsize=30)
+    plt.axis('off')
+    plt.show()
+
+def dict_sort_by_value(dict_input):
+    return sorted(dict_input.items(), key=lambda x:x[1], reverse=True)
+
+# Read CSV file,
+df = pd.read_csv('ESP.csv')
+
+# Create an undirected graph
+G = nx.Graph()
+
+# Create graph from connectivity table, row['origin'] is the id of the output source, and row['target'] is id of input source, 
+# Link_ID is the id of corridor, cost=row['CW_Dist'] is to obtain the sum resistance values where the corridor across.
+for idx, row in df.iterrows():
+    G.add_edges_from([(row['origin'], row['target'])], line=row['Link_ID'], cost=row['CW_Dist'])
+
+print('Number of nodes')
+print(len(G.nodes))
+
+print('Number of edges')
+print(len(G.edges))
+
+pos = nx.spring_layout(G, seed=200)
+
+pagerank = nx.pagerank(G, alpha=0.85)
+draw(G, pos, pagerank, 'pagerank')
